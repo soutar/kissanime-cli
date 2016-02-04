@@ -10,7 +10,7 @@ async function chooseShow (headers = {}) {
     inquirer.prompt([{
       type: "input",
       name: "showQuery",
-      message: "What anime do you want to watch?"
+      message: "What cartoon do you want to watch?"
     }], async function ({ showQuery }) {
       let shows = await search(showQuery, headers);
 
@@ -18,7 +18,7 @@ async function chooseShow (headers = {}) {
         if (showQuery) {
           console.log(`Couldn't find "${showQuery}"`);
         } else {
-          console.log('Type the name of the anime you want to watch');
+          console.log('Type the name of the cartoon you want to watch');
         }
         return chooseShow(headers).then(resolve).catch(reject);
       }

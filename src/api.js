@@ -6,7 +6,8 @@ import fs from 'fs';
 
 import asp from './asp';
 
-const baseUrl = 'https://kissanime.to';
+const baseUrl = 'http://kisscartoon.me';
+const contentType = 'Cartoon';
 const headersCache = './.cfheaderscache';
 
 function tryCachedHeaders () {
@@ -35,7 +36,9 @@ export async function getBypassHeaders () {
           if (error) reject(error);
           resolve(response.request.headers);
           cacheHeaders(response.request.headers);
-        });
+        },
+        { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.97 Safari/537.36' }
+      );
     });
 }
 
@@ -47,7 +50,7 @@ export function createFormData (data = {}) {
 }
 
 export function search (keyword = '', headers = {}) {
-  const form = createFormData({ type: 'Anime', keyword });
+  const form = createFormData({ type: contentType, keyword });
   return fetch(
     `${baseUrl}/Search/SearchSuggest`,
     { method: 'POST', body: form, headers }
@@ -72,20 +75,20 @@ export function nodeArrayFromCheerio (cheerio) {
 }
 
 export function getEpisodes (programmeGuid, headers = {}) {
-  return fetch(`${baseUrl}/Anime/${programmeGuid}`, { headers })
+  return fetch(`${baseUrl}/${contentType}/${programmeGuid}`, { headers })
     .then(res => res.text())
     .then(text => {
       const $ = cheerio.load(text);
       const results = $('table.listing td a');
       return nodeArrayFromCheerio(results)
-      .map(node => {
-        return [parseGuidFromUrl(node.attribs.href), node.children[0].data.trim()];
-      }).reverse();
+          .map(node => {
+            return [parseGuidFromUrl(node.attribs.href), node.children[0].data.trim()];
+          }).reverse();
     }).catch(err => { console.log(err); return err; })
 }
 
 export function getEpisodeDownloadLink (programmeGuid, episodeGuid, headers = {}) {
-  return fetch(`${baseUrl}/Anime/${programmeGuid}/${episodeGuid}`, { headers })
+  return fetch(`${baseUrl}/${contentType}/${programmeGuid}/${episodeGuid}`, { headers })
     .then(res => {
       if (res.status !== 200) {
         throw res.status
