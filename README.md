@@ -2,6 +2,8 @@
 
 Quick and dirty command-line interface for streaming anime from KissAnime. The CLI allows you to search by anime title and select any available episode. The episode you select will be opened your default web browser.
 
+![](http://i.imgur.com/gNZeXYq.gif)
+
 ## Build
 
 KissAnime CLI is not yet available via npm, but can be built manually if you have Node.js installed.
