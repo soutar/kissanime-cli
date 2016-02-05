@@ -62,15 +62,15 @@ async function chooseEpisode (show, headers = {}) {
 }
 
 async function main () {
-  let spinner = new Spinner('%s Bypassing DDoS protection..');
-  spinner.setSpinnerString('|/-\\');
-  spinner.start();
-  let headers = await getBypassHeaders();
-  spinner.stop(true);
+  // let spinner = new Spinner('%s Bypassing DDoS protection..');
+  // spinner.setSpinnerString('|/-\\');
+  // spinner.start();
+  // let headers = await getBypassHeaders();
+  // spinner.stop(true);
 
-  let show = await chooseShow(headers);
-  let episode = await chooseEpisode(show, headers);
-  let link = await getEpisodeDownloadLink(show, episode, headers);
+  let show = await chooseShow();
+  let episode = await chooseEpisode(show);
+  let link = await getEpisodeDownloadLink(show, episode);
 
   console.log(`Opening ${link}`)
   open(link);

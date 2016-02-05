@@ -6,7 +6,7 @@ import fs from 'fs';
 
 import asp from './asp';
 
-const baseUrl = 'https://kissanime.to';
+const baseUrl = 'http://vidics.ch';
 const headersCache = './.cfheaderscache';
 
 function tryCachedHeaders () {
@@ -46,14 +46,14 @@ export function createFormData (data = {}) {
   }, new FormData());
 }
 
-export function search (keyword = '', headers = {}) {
-  const form = createFormData({ type: 'Anime', keyword });
+export function search (keyword = '') {
+  const form = createFormData({ ajax: 1 });
   return fetch(
-    `${baseUrl}/Search/SearchSuggest`,
-    { method: 'POST', body: form, headers }
+    `${baseUrl}/searchSuggest/FilmsAndTV/${keyword}`,
+    { method: 'POST', body: form }
   ).then(res => res.text()).then(res => {
     const $ = cheerio.load(res);
-    const results = $('a');
+    const results = $('.searchitem a').not('.blue');
 
     return nodeArrayFromCheerio(results)
       .map(node => [parseGuidFromUrl(node.attribs.href), node.children[0].data])
