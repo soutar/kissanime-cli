@@ -3,62 +3,17 @@ import inquirer from 'inquirer';
 import open from 'open';
 import { Spinner } from 'cli-spinner';
 
-import { search, getEpisodes, getEpisodeDownloadLink } from './api';
+import { search, getEpisodes, getEpisodeDownloadLink, getSeries, getVideoList, getVideoElement, determineType } from './api';
 
-async function chooseType () {
-    return new Promise((resolve, reject) => {
-        inquirer.prompt([{
-            type: "list",
-            name: "typeQuery",
-            message: "What do you want to watch?",
-            choices: [{name:"TV", value:"TvShows"}, {name:"Movie", value:"Movies"}]
-        }], ({ typeQuery }) => {
-            resolve(typeQuery);
-        })
-    });
-}
-
-async function chooseShow (type) {
+async function chooseShow () {
 let types = {"Movies":"Movie", "TvShows":"TV Show"};
 
   return new Promise((resolve, reject) => {
     inquirer.prompt([{
       type: "input",
       name: "showQuery",
-      message: `Which ${types[type]} do you want to watch?`
-    }], async function ({ showQuery }) {
-      let shows = await search(showQuery, type);
-
-      if (!shows.length) {
-        if (showQuery) {
-          console.log(`Couldn't find "${showQuery}"`);
-        } else {
-          console.log('Type the name of the tv show or movie you want to watch');
-        }
-        return chooseShow(type).then(resolve).catch(reject);
-      }
-
-      inquirer.prompt([{
-        type: "list",
-        name: "show",
-        message: `Which one? (${shows.length} found)`,
-        choices: shows.map(([guid, title]) => ({
-          name: title,
-          value: guid
-        }))
-      }], ({ show }) => {
-        resolve(show);
-      });
-    });
-  });
-}
-
-async function chooseSeries () {
-  return new Promise((resolve, reject) => {
-    inquirer.prompt([{
-      type: "input",
-      name: "showQuery",
-      message: "What do you want to watch?"
+      message: "What do you want to watch?",
+      default: "modern"
     }], async function ({ showQuery }) {
       let shows = await search(showQuery);
 
@@ -86,13 +41,36 @@ async function chooseSeries () {
   });
 }
 
-async function chooseEpisode (show) {
+async function chooseSeries (show) {
   return new Promise(async function (resolve, reject) {
-    let episodes = await getEpisodes(show);
+    let series = await getSeries(show);
+
+    if (!series.length) {
+      console.log(`Couldn't find any series`);
+      return chooseShow().then(show => chooseSeries(show));
+    }
+
+    inquirer.prompt([{
+      type: "list",
+      name: "series",
+      message: `Which series? (${series.length} found)`,
+      choices: series.map(([guid, title]) => ({
+        name: title,
+        value: guid
+      }))
+    }], ({ series }) => {
+      resolve(series);
+    });
+  });
+}
+
+async function chooseEpisode (series) {
+  return new Promise(async function (resolve, reject) {
+    let episodes = await getEpisodes(series);
 
     if (!episodes.length) {
       console.log(`Couldn't find any episodes`);
-      return chooseShow().then(show => chooseEpisode(show));
+      return chooseShow().then(show => chooseSeries(show));
     }
 
     inquirer.prompt([{
@@ -109,14 +87,46 @@ async function chooseEpisode (show) {
   });
 }
 
-async function main () {
-  let type = await chooseType();
-  let show = await chooseShow(type);
+async function chooseVideos (episode) {
+  return new Promise(async function (resolve, reject) {
+    let videolinks = await getVideoList(episode);
 
-  if(type=="TvShows"){
+    if (!videolinks.length) {
+      console.log(`Couldn't find any video links`);
+      return chooseShow().then(show => chooseSeries(show));
+    }
+
+    inquirer.prompt([{
+      type: "list",
+      name: "videolink",
+      message: `Which video link? (${videolinks.length} found)`,
+      choices: videolinks.map(([guid, title]) => ({
+        name: title,
+        value: guid
+      }))
+    }], ({ videolink }) => {
+      resolve(videolink);
+    });
+  });
+}
+
+async function parseVideo(videolink) {
+  return new Promise(async function (resolve, reject) {
+    let video = await getVideoElement(videolink);
+    resolve(video);
+  });
+}
+
+async function main () {
+  let show = await chooseShow();
+  let type = await determineType(show);
+
+  if(type=="Serie"){
     let series = await chooseSeries(show);
-    let episode = await chooseEpisode(show, series);
-    let link = await getEpisodeDownloadLink(show, series, episode);
+    let episode = await chooseEpisode(series);
+    let videolink = await chooseVideos(episode);
+    let video = await parseVideo(videolink);
+    let link = await getEpisodeDownloadLink(episode);
   } else {
     let link = await getEpisodeDownloadLink(show);
   }
