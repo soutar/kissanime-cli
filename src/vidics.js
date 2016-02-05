@@ -5,14 +5,29 @@ import { Spinner } from 'cli-spinner';
 
 import { search, getEpisodes, getEpisodeDownloadLink } from './api';
 
-async function chooseShow () {
+async function chooseType () {
+    return new Promise((resolve, reject) => {
+        inquirer.prompt([{
+            type: "list",
+            name: "typeQuery",
+            message: "What do you want to watch?",
+            choices: [{name:"TV", value:"TvShows"}, {name:"Movie", value:"Movies"}]
+        }], ({ typeQuery }) => {
+            resolve(typeQuery);
+        })
+    });
+}
+
+async function chooseShow (type) {
+let types = {"Movies":"Movie", "TvShows":"TV Show"};
+
   return new Promise((resolve, reject) => {
     inquirer.prompt([{
       type: "input",
       name: "showQuery",
-      message: "What do you want to watch?"
+      message: `Which ${types[type]} do you want to watch?`
     }], async function ({ showQuery }) {
-      let shows = await search(showQuery);
+      let shows = await search(showQuery, type);
 
       if (!shows.length) {
         if (showQuery) {
@@ -20,7 +35,7 @@ async function chooseShow () {
         } else {
           console.log('Type the name of the tv show or movie you want to watch');
         }
-        return chooseShow().then(resolve).catch(reject);
+        return chooseShow(type).then(resolve).catch(reject);
       }
 
       inquirer.prompt([{
@@ -95,10 +110,16 @@ async function chooseEpisode (show) {
 }
 
 async function main () {
-  let show = await chooseShow();
-  let series = await chooseSeries();
-  let episode = await chooseEpisode(show);
-  let link = await getEpisodeDownloadLink(show, episode);
+  let type = await chooseType();
+  let show = await chooseShow(type);
+
+  if(type=="TvShows"){
+    let series = await chooseSeries(show);
+    let episode = await chooseEpisode(show, series);
+    let link = await getEpisodeDownloadLink(show, series, episode);
+  } else {
+    let link = await getEpisodeDownloadLink(show);
+  }
 
   console.log(`Opening ${link}`)
   open(link);

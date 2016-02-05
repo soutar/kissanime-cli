@@ -14,10 +14,11 @@ export function createFormData (data = {}) {
   }, new FormData());
 }
 
-export function search (keyword = '') {
+export function search (keyword = '', type = 'FilmsAndTV') {
+    console.log(type);
   const form = createFormData({ ajax: 1 });
   return fetch(
-    `${baseUrl}/searchSuggest/FilmsAndTV/${keyword}`,
+    `${baseUrl}/searchSuggest/${type}/${keyword}`,
     { method: 'POST', body: form }
   ).then(res => res.text()).then(res => {
     const $ = cheerio.load(res);
