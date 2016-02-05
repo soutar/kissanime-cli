@@ -95,7 +95,7 @@ export function getVideoElement (videoUrl) {
             imhuman: $('input[name="imhuman"]')[0].attribs.value,
         });
 
-        return fetch(`${baseUrl}${videoUrl}`, { method: 'POST', body: form, credentials: 'include' })
+        return fetch(`${baseUrl}${videoUrl}`, { method: 'POST', body: form })
         .then(res => res.text())
         .then(text => {
             console.log(text);
