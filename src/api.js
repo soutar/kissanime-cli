@@ -1,4 +1,3 @@
-import cloudscraper from 'cloudscraper';
 import FormData from 'form-data';
 import fetch from 'node-fetch';
 import cheerio from 'cheerio';
@@ -7,37 +6,6 @@ import fs from 'fs';
 import asp from './asp';
 
 const baseUrl = 'http://vidics.ch';
-const headersCache = './.cfheaderscache';
-
-function tryCachedHeaders () {
-  try {
-      var headers = JSON.parse(fs.readFileSync(headersCache).toString('utf-8'));
-  } catch (e) {
-      return false;
-  }
-
-  return fetch(baseUrl, { headers })
-    .then(res => (res.status === 200) ? headers : false);
-}
-
-function cacheHeaders (headers = {}) {
-  fs.writeFileSync(headersCache, JSON.stringify(headers));
-}
-
-export async function getBypassHeaders () {
-    let cached = await tryCachedHeaders();
-    if (cached) return Promise.resolve(cached);
-
-    return new Promise((resolve, reject) => {
-      cloudscraper.get(
-        baseUrl,
-        (error, response, body) => {
-          if (error) reject(error);
-          resolve(response.request.headers);
-          cacheHeaders(response.request.headers);
-        });
-    });
-}
 
 export function createFormData (data = {}) {
   return Object.keys(data).reduce((form, key) => {
@@ -71,8 +39,8 @@ export function nodeArrayFromCheerio (cheerio) {
     .map(key => cheerio[key]);
 }
 
-export function getEpisodes (programmeGuid, headers = {}) {
-  return fetch(`${baseUrl}/Anime/${programmeGuid}`, { headers })
+export function getEpisodes (programmeGuid) {
+  return fetch(`${baseUrl}/Anime/${programmeGuid}`)
     .then(res => res.text())
     .then(text => {
       const $ = cheerio.load(text);
@@ -84,8 +52,8 @@ export function getEpisodes (programmeGuid, headers = {}) {
     }).catch(err => { console.log(err); return err; })
 }
 
-export function getEpisodeDownloadLink (programmeGuid, episodeGuid, headers = {}) {
-  return fetch(`${baseUrl}/Anime/${programmeGuid}/${episodeGuid}`, { headers })
+export function getEpisodeDownloadLink (programmeGuid, episodeGuid) {
+  return fetch(`${baseUrl}/Anime/${programmeGuid}/${episodeGuid}`)
     .then(res => {
       if (res.status !== 200) {
         throw res.status

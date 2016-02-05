@@ -1,11 +1,11 @@
 {
-  "name": "kissanime",
+  "name": "vidics",
   "version": "1.0.0",
   "description": "",
-  "main": "lib/kissanime.js",
+  "main": "lib/vidics.js",
   "preferGlobal": true,
   "bin": {
-    "kissanime": "./lib/kissanime.js"
+    "vidics": "./lib/vidics.js"
   },
   "dependencies": {
     "babel-polyfill": "^6.3.14",
