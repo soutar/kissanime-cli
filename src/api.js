@@ -1,3 +1,4 @@
+import cloudscraper from 'cloudscraper';
 import FormData from 'form-data';
 import fetch from 'node-fetch';
 import cheerio from 'cheerio';
@@ -6,7 +7,38 @@ import fs from 'fs';
 import asp from './asp';
 
 const baseUrl = 'http://vidics.ch';
+const headersCache = './.cfheaderscache';
 const goodLinks = ["Vodlocker.com", "Thevideo.me", "Vidto.me"];
+
+function tryCachedHeaders () {
+  try {
+      var headers = JSON.parse(fs.readFileSync(headersCache).toString('utf-8'));
+  } catch (e) {
+      return false;
+  }
+
+  return fetch(baseUrl, { headers })
+    .then(res => (res.status === 200) ? headers : false);
+}
+
+function cacheHeaders (headers = {}) {
+  fs.writeFileSync(headersCache, JSON.stringify(headers));
+}
+
+export async function getBypassHeaders (videolink) {
+    let cached = await tryCachedHeaders();
+    if (cached) return Promise.resolve(cached);
+
+    return new Promise((resolve, reject) => {
+      cloudscraper.get(
+        videolink,
+        (error, response, body) => {
+          if (error) reject(error);
+          resolve(response.request.headers);
+          cacheHeaders(response.request.headers);
+        });
+    });
+}
 
 export function createFormData (data = {}) {
   return Object.keys(data).reduce((form, key) => {
@@ -79,8 +111,15 @@ export function getVideoList (episodeGuid) {
     }).catch(err => { console.log(err); return err; })
 }
 
-export function getVideoElement (videoUrl) {
-     return fetch(`${baseUrl}${videoUrl}`)
+export function getRealUrl (videoLink) {
+    return fetch(`${baseUrl}${videoLink}`)
+    .then(res => {
+        return res.url;
+    });
+}
+
+export function getVideoElement (videoUrl, headers = {}) {
+     return fetch(`${videoUrl}`)
     .then(res => res.text())
     .then(text => {
         const $ = cheerio.load(text);
@@ -95,14 +134,24 @@ export function getVideoElement (videoUrl) {
             imhuman: $('input[name="imhuman"]')[0].attribs.value,
         });
 
-        return fetch(`${baseUrl}${videoUrl}`, { method: 'POST', body: form })
-        .then(res => res.text())
-        .then(text => {
-            console.log(text);
-            const pattern = RegExp("(http(s)?)[A-Za-z0-9%?=&:/._-]*[.]{1}(mp4(?!.jpg)|webm|ogg)([?]{1}[A-Za-z0-9%?=&:/.-_;-]*)?", "ig");
-            const matches = text.match(pattern);
-            console.log(matches);
+        return new Promise((resolve, reject) => {
+          cloudscraper.post(
+            videoUrl,
+            {body: form},
+            (error, response, body) => {
+              if (error) reject(error);
+              console.log(body);
+            });
         });
+
+        // return fetch(`${videoUrl}`, { method: 'POST', body: form, headers })
+        // .then(res => res.text())
+        // .then(text => {
+        //     console.log(text);
+        //     const pattern = RegExp("(http(s)?)[A-Za-z0-9%?=&:/._-]*[.]{1}(mp4(?!.jpg)|webm|ogg)([?]{1}[A-Za-z0-9%?=&:/.-_;-]*)?", "ig");
+        //     const matches = text.match(pattern);
+        //     console.log(matches);
+        // });
     });
 }
 

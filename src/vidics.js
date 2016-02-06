@@ -3,7 +3,7 @@ import inquirer from 'inquirer';
 import open from 'open';
 import { Spinner } from 'cli-spinner';
 
-import { search, getEpisodes, getEpisodeDownloadLink, getSeries, getVideoList, getVideoElement, determineType } from './api';
+import { getBypassHeaders, search, getEpisodes, getEpisodeDownloadLink, getSeries, getVideoList, getVideoElement, determineType, getRealUrl } from './api';
 
 async function chooseShow () {
 let types = {"Movies":"Movie", "TvShows":"TV Show"};
@@ -110,10 +110,17 @@ async function chooseVideos (episode) {
   });
 }
 
-async function parseVideo(videolink) {
+async function parseVideo(videolink, headers = {}) {
   return new Promise(async function (resolve, reject) {
-    let video = await getVideoElement(videolink);
+    let video = await getVideoElement(videolink, headers);
     resolve(video);
+  });
+}
+
+async function getRealLink(videolink) {
+  return new Promise(async function (resolve, reject) {
+    let url = await getRealUrl(videolink);
+    resolve(url);
   });
 }
 
@@ -124,15 +131,24 @@ async function main () {
   if(type=="Serie"){
     let series = await chooseSeries(show);
     let episode = await chooseEpisode(series);
-    let videolink = await chooseVideos(episode);
-    let video = await parseVideo(videolink);
+    let videoredirect = await chooseVideos(episode);
+    let videolink = await getRealLink(videoredirect);
+
+    let spinner = new Spinner('%s Bypassing DDoS protection..');
+    spinner.setSpinnerString('|/-\\');
+    spinner.start();
+    let headers = await getBypassHeaders(videolink);
+    spinner.stop(true);
+
+    let video = await parseVideo(videolink, headers);
+
     let link = await getEpisodeDownloadLink(episode);
   } else {
     let link = await getEpisodeDownloadLink(show);
   }
 
-  console.log(`Opening ${link}`)
-  open(link);
+  // console.log(`Opening ${link}`)
+  // open(link);
 }
 
 main();
