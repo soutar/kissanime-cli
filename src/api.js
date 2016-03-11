@@ -3,6 +3,8 @@ import FormData from 'form-data';
 import fetch from 'node-fetch';
 import cheerio from 'cheerio';
 import fs from 'fs';
+import videoSource from 'video-source';
+import gunzip from 'gunzip-maybe';
 
 import asp from './asp';
 
@@ -10,14 +12,14 @@ const baseUrl = 'http://vidics.ch';
 const headersCache = './.cfheaderscache';
 const goodLinks = ["Vodlocker.com", "Thevideo.me", "Vidto.me"];
 
-function tryCachedHeaders () {
+function tryCachedHeaders (url) {
   try {
       var headers = JSON.parse(fs.readFileSync(headersCache).toString('utf-8'));
   } catch (e) {
       return false;
   }
 
-  return fetch(baseUrl, { headers })
+  return fetch(url, { headers })
     .then(res => (res.status === 200) ? headers : false);
 }
 
@@ -25,13 +27,10 @@ function cacheHeaders (headers = {}) {
   fs.writeFileSync(headersCache, JSON.stringify(headers));
 }
 
-export async function getBypassHeaders (videolink) {
-    let cached = await tryCachedHeaders();
-    if (cached) return Promise.resolve(cached);
-
+export async function getBypassHeaders (videolink = "") {
     return new Promise((resolve, reject) => {
       cloudscraper.get(
-        videolink,
+        baseUrl + videolink,
         (error, response, body) => {
           if (error) reject(error);
           resolve(response.request.headers);
@@ -47,11 +46,11 @@ export function createFormData (data = {}) {
   }, new FormData());
 }
 
-export function search (keyword = '') {
+export function search (keyword = '', headers = {}) {
   const form = createFormData({ ajax: 1 });
   return fetch(
     `${baseUrl}/searchSuggest/FilmsAndTV/${keyword}`,
-    { method: 'POST', body: form }
+    { method: 'POST', body: form, headers }
   ).then(res => res.text()).then(res => {
     const $ = cheerio.load(res);
     const results = $('.searchitem a').not('.blue');
@@ -81,8 +80,8 @@ export function getSeries (programmeGuid) {
     }).catch(err => { console.log(err); return err; })
 }
 
-export function getEpisodes (seriesGuid) {
-  return fetch(`${baseUrl}${seriesGuid}`)
+export function getEpisodes (seriesGuid, headers = {}) {
+  return fetch(`${baseUrl}${seriesGuid}`, { headers })
     .then(res => res.text())
     .then(text => {
       const $ = cheerio.load(text);
@@ -94,8 +93,8 @@ export function getEpisodes (seriesGuid) {
     }).catch(err => { console.log(err); return err; })
 }
 
-export function getVideoList (episodeGuid) {
-    return fetch(`${baseUrl}${episodeGuid}`)
+export function getVideoList (episodeGuid, headers = {}) {
+    return fetch(`${baseUrl}${episodeGuid}`, { headers })
     .then(res => res.text())
     .then(text => {
       const $ = cheerio.load(text);
@@ -119,7 +118,7 @@ export function getRealUrl (videoLink) {
 }
 
 export function getVideoElement (videoUrl, headers = {}) {
-     return fetch(`${videoUrl}`)
+     return fetch(`${videoUrl}`, { headers })
     .then(res => res.text())
     .then(text => {
         const $ = cheerio.load(text);
@@ -140,7 +139,6 @@ export function getVideoElement (videoUrl, headers = {}) {
             {body: form},
             (error, response, body) => {
               if (error) reject(error);
-              console.log(body);
             });
         });
 
@@ -155,8 +153,8 @@ export function getVideoElement (videoUrl, headers = {}) {
     });
 }
 
-export function getEpisodeDownloadLink (episodeGuid) {
-  return fetch(`${baseUrl}${episodeGuid}`)
+export function getEpisodeDownloadLink (episodeGuid, headers = {}) {
+  return fetch(`${baseUrl}${episodeGuid}`, { headers })
     .then(res => {
       if (res.status !== 200) {
         throw res.status
@@ -173,4 +171,10 @@ export function getEpisodeDownloadLink (episodeGuid) {
 
 export function determineType(url) {
     return url.split('/')[1];
+}
+
+export function getVideoLocation(url) {
+    videoSource.getInfo(url).then(function (info) {
+        return info.url;
+    });
 }

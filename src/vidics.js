@@ -3,9 +3,9 @@ import inquirer from 'inquirer';
 import open from 'open';
 import { Spinner } from 'cli-spinner';
 
-import { getBypassHeaders, search, getEpisodes, getEpisodeDownloadLink, getSeries, getVideoList, getVideoElement, determineType, getRealUrl } from './api';
+import { getBypassHeaders, search, getEpisodes, getEpisodeDownloadLink, getSeries, getVideoList, getVideoElement, determineType, getRealUrl, getVideoLocation } from './api';
 
-async function chooseShow () {
+async function chooseShow (headers = {}) {
 let types = {"Movies":"Movie", "TvShows":"TV Show"};
 
   return new Promise((resolve, reject) => {
@@ -15,7 +15,7 @@ let types = {"Movies":"Movie", "TvShows":"TV Show"};
       message: "What do you want to watch?",
       default: "modern"
     }], async function ({ showQuery }) {
-      let shows = await search(showQuery);
+      let shows = await search(showQuery, headers);
 
       if (!shows.length) {
         if (showQuery) {
@@ -23,7 +23,7 @@ let types = {"Movies":"Movie", "TvShows":"TV Show"};
         } else {
           console.log('Type the name of the tv show or movie you want to watch');
         }
-        return chooseShow().then(resolve).catch(reject);
+        return chooseShow(headers).then(resolve).catch(reject);
       }
 
       inquirer.prompt([{
@@ -61,16 +61,16 @@ async function chooseSeries (show) {
     }], ({ series }) => {
       resolve(series);
     });
-  });
+  }).catch(err => { console.log(err); reject(err); });
 }
 
-async function chooseEpisode (series) {
+async function chooseEpisode (series, headers = {}) {
   return new Promise(async function (resolve, reject) {
-    let episodes = await getEpisodes(series);
+    let episodes = await getEpisodes(series, headers);
 
     if (!episodes.length) {
       console.log(`Couldn't find any episodes`);
-      return chooseShow().then(show => chooseSeries(show));
+      return chooseShow(headers).then(show => chooseSeries(show, headers));
     }
 
     inquirer.prompt([{
@@ -124,31 +124,50 @@ async function getRealLink(videolink) {
   });
 }
 
+async function getVideoURL(videolink) {
+    return new Promise(async function(resolve, reject){
+        let url = await getVideoLocation(videolink);
+        resolve(url);
+    });
+}
+
+async function bypassHeaders(url = '') {
+    return new Promise(async function(resolve, reject){
+        let spinner = new Spinner('%s Bypassing DDoS protection..');
+        spinner.setSpinnerString('|/-\\');
+        spinner.start();
+        let headers = await getBypassHeaders(url);
+        spinner.stop(true);
+        resolve(headers);
+    });
+}
+
 async function main () {
-  let show = await chooseShow();
-  let type = await determineType(show);
+  let headers = {};
+
+  let show = await chooseShow(headers);
+  let type = await determineType(show, headers);
 
   if(type=="Serie"){
-    let series = await chooseSeries(show);
-    let episode = await chooseEpisode(series);
-    let videoredirect = await chooseVideos(episode);
-    let videolink = await getRealLink(videoredirect);
+    let series = await chooseSeries(show, headers);
+    let episode = await chooseEpisode(series, headers);
+    let videoredirect = await chooseVideos(episode, headers);
+    let videolink = await getRealLink(videoredirect, headers);
+    let videourl = await getVideoURL(videolink, headers);
+    // let spinner = new Spinner('%s Bypassing DDoS protection..');
+    // spinner.setSpinnerString('|/-\\');
+    // spinner.start();
+    // let headers = await getBypassHeaders(videolink);
+    // spinner.stop(true);
 
-    let spinner = new Spinner('%s Bypassing DDoS protection..');
-    spinner.setSpinnerString('|/-\\');
-    spinner.start();
-    let headers = await getBypassHeaders(videolink);
-    spinner.stop(true);
+    // let video = await parseVideo(videolink, headers);
 
-    let video = await parseVideo(videolink, headers);
-
-    let link = await getEpisodeDownloadLink(episode);
+    // let link = await getEpisodeDownloadLink(episode);
+    // console.log(`Opening ${videolink}`);
+    // open(videolink);
   } else {
     let link = await getEpisodeDownloadLink(show);
   }
-
-  // console.log(`Opening ${link}`)
-  // open(link);
 }
 
 main();
