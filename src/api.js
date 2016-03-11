@@ -57,7 +57,7 @@ export function search (keyword = '', headers = {}) {
 
     return nodeArrayFromCheerio(results)
       .map(node => [node.attribs.href, node.children[0].data])
-  }).catch(err => { console.log(err); return err; });
+  }).catch(err => { console.log(60,err); return err; });
 }
 
 export function nodeArrayFromCheerio (cheerio) {
@@ -77,7 +77,7 @@ export function getSeries (programmeGuid) {
       .map(node => {
         return [node.attribs.href, node.children[0].data.trim()];
       }).reverse();
-    }).catch(err => { console.log(err); return err; })
+    }).catch(err => { console.log(80,err); return err; })
 }
 
 export function getEpisodes (seriesGuid, headers = {}) {
@@ -90,7 +90,7 @@ export function getEpisodes (seriesGuid, headers = {}) {
       .map(node => {
         return [node.attribs.href, node.children[0].data.trim() + " " + node.children[1].children[0].data.trim()];
       }).reverse();
-    }).catch(err => { console.log(err); return err; })
+    }).catch(err => { console.log(93,err); return err; })
 }
 
 export function getVideoList (episodeGuid, headers = {}) {
@@ -107,7 +107,7 @@ export function getVideoList (episodeGuid, headers = {}) {
       }).sort((a, b) => {
         return goodLinks.indexOf(a[1]) - goodLinks.indexOf(b[1]);
       });
-    }).catch(err => { console.log(err); return err; })
+    }).catch(err => { console.log(110,err); return err; })
 }
 
 export function getRealUrl (videoLink) {
@@ -174,7 +174,9 @@ export function determineType(url) {
 }
 
 export function getVideoLocation(url) {
-    videoSource.getInfo(url).then(function (info) {
-        return info.url;
-    });
+    return new Promise((resolve, reject) => {
+        videoSource.getInfo(url).then((info) => {
+            resolve(info.url);
+        });
+    })
 }

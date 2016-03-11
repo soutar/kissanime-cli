@@ -2,6 +2,7 @@ import 'babel-polyfill';
 import inquirer from 'inquirer';
 import open from 'open';
 import { Spinner } from 'cli-spinner';
+import player from 'chromecast-player';
 
 import { getBypassHeaders, search, getEpisodes, getEpisodeDownloadLink, getSeries, getVideoList, getVideoElement, determineType, getRealUrl, getVideoLocation } from './api';
 
@@ -61,7 +62,7 @@ async function chooseSeries (show) {
     }], ({ series }) => {
       resolve(series);
     });
-  }).catch(err => { console.log(err); reject(err); });
+  }).catch(err => { console.log(65, err); reject(err); });
 }
 
 async function chooseEpisode (series, headers = {}) {
@@ -154,17 +155,13 @@ async function main () {
     let videoredirect = await chooseVideos(episode, headers);
     let videolink = await getRealLink(videoredirect, headers);
     let videourl = await getVideoURL(videolink, headers);
-    // let spinner = new Spinner('%s Bypassing DDoS protection..');
-    // spinner.setSpinnerString('|/-\\');
-    // spinner.start();
-    // let headers = await getBypassHeaders(videolink);
-    // spinner.stop(true);
+    let p = new player();
 
-    // let video = await parseVideo(videolink, headers);
-
-    // let link = await getEpisodeDownloadLink(episode);
-    // console.log(`Opening ${videolink}`);
-    // open(videolink);
+    p.launch(videourl, function(err, pa) {
+        pa.once('playing', function() {
+            console.log('playback has started.');
+        });
+    });
   } else {
     let link = await getEpisodeDownloadLink(show);
   }
