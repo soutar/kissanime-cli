@@ -1,6 +1,6 @@
 # KissAnime CLI
 
-Quick and dirty command-line interface for streaming anime from KissAnime. The CLI allows you to search by anime title and select any available episode. The episode you select will be opened your default web browser.
+Quick and dirty command-line interface for streaming anime from KissAnime. The CLI allows you to search by anime title and select any available episode. The episode you select will be opened in your default web browser.
 
 ![](http://i.imgur.com/gNZeXYq.gif)
 
