@@ -6,7 +6,7 @@ import fs from 'fs';
 
 import asp from './asp';
 
-const baseUrl = 'https://kissanime.to';
+const baseUrl = 'http://kissanime.to';
 const headersCache = './.cfheaderscache';
 
 function tryCachedHeaders () {
@@ -32,9 +32,12 @@ export async function getBypassHeaders () {
       cloudscraper.get(
         baseUrl,
         (error, response, body) => {
-          if (error) reject(error);
-          resolve(response.request.headers);
-          cacheHeaders(response.request.headers);
+          if (error) {
+            reject(error);
+          } else {
+            resolve(response.request.headers);
+            cacheHeaders(response.request.headers);
+          }
         });
     });
 }
@@ -49,7 +52,7 @@ export function createFormData (data = {}) {
 export function search (keyword = '', headers = {}) {
   const form = createFormData({ type: 'Anime', keyword });
   return fetch(
-    `${baseUrl}/Search/SearchSuggest`,
+    `${baseUrl}/Search/SearchSuggestx`,
     { method: 'POST', body: form, headers }
   ).then(res => res.text()).then(res => {
     const $ = cheerio.load(res);
